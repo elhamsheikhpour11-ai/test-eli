@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>거식증 치료 분석 - Anorexia Treatment Data Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0f14 0%, #1a1f2e 50%, #0f1419 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .back-button::before {
+            content: '←';
+            font-size: 18px;
+        }
+
+        .background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: screen;
+            opacity: 0.7;
+        }
+
+        .mouse-follow {
+            position: fixed;
+            width: 384px;
+            height: 384px;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.15), transparent);
+            filter: blur(60px);
+            transition: all 0.3s ease-out;
+            z-index: 2;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, rgba(5, 46, 22, 0.1), rgba(0, 0, 0, 0.4));
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            padding: 32px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 64px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #22c55e 0%, #eab308 50%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 20px rgba(34, 197, 94, 0.8));
+            }
+        }
+
+        .subtitle {
+            font-size: 24px;
+            font-weight: 300;
+            color: #22c55e;
+            letter-spacing: 2px;
+        }
+
+        .tags {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 12px;
+            font-weight: 300;
+            color: #6b7280;
+            letter-spacing: 4px;
+        }
+
+        .tags span {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .tags span:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .tags span:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 64px;
+            max-width: 1152px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .metric-card {
+            position: relative;
+            padding: 24px;
+            overflow: hidden;
+            border-radius: 16px;
+            border: 2px solid;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            animation: fadeInUp 0.8s ease-out both, float 6s ease-in-out infinite;
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #9ca3af;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 16px 32px;
+            border-radius: 999px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 14px;
+            transition: all 0.5s ease;
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: #9ca3af;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button:hover {
+            color: #22c55e;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #22c55e, #eab308);
+            border: none;
+            color: #000;
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.5);
+        }
+
+        .chart-container {
+            max-width: 1152px;
+            margin: 0 auto 32px;
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            background: rgba(10, 15, 20, 0.8);
+            border: 2px solid rgba(34, 197, 94, 0.3);
+            box-shadow: 0 20px 60px rgba(34, 197, 94, 0.2);
+        }
+
+        .chart-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #22c55e;
+            margin-bottom: 32px;
+            letter-spacing: 2px;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 450px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .radar-chart {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .scatter-chart {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.2), transparent);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            animation: fadeInUp 0.6s ease-out both;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .legend {
+            margin-top: 32px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .legend-item:hover {
+            transform: scale(1.1);
+        }
+
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 0 15px currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .legend-text {
+            font-size: 14px;
+            color: #d1d5db;
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 64px;
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: #4b5563;
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+
+        .footer-line {
+            margin-top: 16px;
+            width: 256px;
+            height: 1px;
+            margin-left: auto;
+            margin-right: auto;
+            background: linear-gradient(90deg, transparent, #22c55e, transparent);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-button">Back</a>
+    <canvas class="background-canvas" id="backgroundCanvas"></canvas>
+    <div class="mouse-follow" id="mouseFollow"></div>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">거식증 치료 분석</h1>
+            <div class="subtitle">Anorexia Treatment Data Visualization</div>
+            <div class="tags">
+                <span>◉ CONTROL GROUP</span>
+                <span>◉ CBT THERAPY</span>
+                <span>◉ FAMILY THERAPY</span>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"
+                style="border-color: rgba(34, 197, 94, 0.6); background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.25), rgba(20, 25, 30, 0.9)); animation-delay: 0s;">
+                <div class="metric-value" style="color: #22c55e;" id="metric1">72</div>
+                <div class="metric-label">Total Patients</div>
+            </div>
+            <div class="metric-card"
+                style="border-color: rgba(102, 102, 102, 0.6); background: radial-gradient(circle at 30% 30%, rgba(102, 102, 102, 0.25), rgba(20, 25, 30, 0.9)); animation-delay: 0.1s;">
+                <div class="metric-value" style="color: #666;" id="metric2">26</div>
+                <div class="metric-label">Control Group</div>
+            </div>
+            <div class="metric-card"
+                style="border-color: rgba(34, 197, 94, 0.6); background: radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.25), rgba(20, 25, 30, 0.9)); animation-delay: 0.2s;">
+                <div class="metric-value" style="color: #22c55e;" id="metric3">29</div>
+                <div class="metric-label">CBT Group</div>
+            </div>
+            <div class="metric-card"
+                style="border-color: rgba(234, 179, 8, 0.6); background: radial-gradient(circle at 30% 30%, rgba(234, 179, 8, 0.25), rgba(20, 25, 30, 0.9)); animation-delay: 0.3s;">
+                <div class="metric-value" style="color: #eab308;" id="metric4">17</div>
+                <div class="metric-label">Family Therapy</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="treatment">◐ Treatment Comparison</button>
+            <button class="tab-button" data-tab="progress">◉ Patient Progress</button>
+            <button class="tab-button" data-tab="effectiveness">◈ Effectiveness</button>
+        </div>
+
+        <div id="treatmentSection" class="chart-container">
+            <h2 class="chart-title">◐ Treatment Group Comparison</h2>
+            <p
+                style="text-align: center; color: rgba(34, 197, 94, 0.8); margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 차트는 대조군(Control), 인지행동치료(CBT), 가족 치료(Family Therapy) 그룹의 치료 전후 체중 변화를 비교하여 보여줍니다. 각 치료법의 효과를 시각적으로 확인할
+                수 있습니다.
+            </p>
+            <canvas class="chart-canvas" id="treatmentChart"></canvas>
+            <div class="stats-grid" id="treatmentStats"></div>
+        </div>
+
+        <div id="progressSection" class="chart-container hidden">
+            <h2 class="chart-title" style="text-align: center;">◉ Individual Patient Weight Change</h2>
+            <p
+                style="text-align: center; color: rgba(34, 197, 94, 0.8); margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 산점도는 개별 환자들의 치료 전후 체중 변화를 보여줍니다. 가로축은 치료 전 체중, 세로축은 치료 후 체중을 나타내며, 점의 크기는 체중 변화량을 의미합니다.
+            </p>
+            <canvas class="scatter-chart" id="progressChart"></canvas>
+            <div class="legend" id="progressLegend"></div>
+        </div>
+
+        <div id="effectivenessSection" class="chart-container hidden">
+            <h2 class="chart-title" style="text-align: center;">◈ Treatment Effectiveness Analysis</h2>
+            <p
+                style="text-align: center; color: rgba(34, 197, 94, 0.8); margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 레이더 차트는 세 가지 치료법의 다양한 효과 지표를 비교합니다. 중심에서 멀어질수록 해당 지표에서의 효과가 높음을 의미하며, 각 치료법의 강점을 한눈에 파악할 수 있습니다.
+            </p>
+            <canvas class="radar-chart" id="effectivenessChart"></canvas>
+        </div>
+
+        <div class="footer">
+            <div class="footer-text">◉ ANOREXIA TREATMENT ANALYSIS ◉ CLINICAL DATA VISUALIZATION ◉ 2024</div>
+            <div class="footer-text" style="margin-top: 10px;">
+                <a href="https://www.kaggle.com/datasets/ukveteran/anorexia-data-on-weight-change?resource=download"
+                    target="_blank" style="color: #4b5563; text-decoration: none; transition: color 0.3s;"
+                    onmouseover="this.style.color='#22c55e'" onmouseout="this.style.color='#4b5563'">
+                    원본 사이트: Kaggle Dataset
+                </a>
+            </div>
+            <div class="footer-line"></div>
+        </div>
+    </div>
+
+    <script>
+        // 데이터
+        const treatmentComparison = [
+            { group: 'Control', prewt: 81.1, postwt: 81.1, change: 0.0, count: 26, color: '#666' },
+            { group: 'CBT', prewt: 82.7, postwt: 85.7, change: 3.0, count: 29, color: '#22c55e' },
+            { group: 'Family Therapy', prewt: 83.2, postwt: 90.5, change: 7.3, count: 17, color: '#eab308' }
+        ];
+
+        const patientProgress = [
+            { id: 1, treat: 'Cont', pre: 80.7, post: 80.2, change: -0.5, color: '#666' },
+            { id: 27, treat: 'CBT', pre: 80.5, post: 82.2, change: 1.7, color: '#22c55e' },
+            { id: 32, treat: 'CBT', pre: 88.7, post: 103.6, change: 14.9, color: '#22c55e' },
+            { id: 34, treat: 'CBT', pre: 76.3, post: 93.4, change: 17.1, color: '#22c55e' },
+            { id: 41, treat: 'CBT', pre: 70.0, post: 90.9, change: 20.9, color: '#22c55e' },
+            { id: 56, treat: 'FT', pre: 83.8, post: 95.2, change: 11.4, color: '#eab308' },
+            { id: 60, treat: 'FT', pre: 86.7, post: 100.3, change: 13.6, color: '#eab308' },
+            { id: 63, treat: 'FT', pre: 94.2, post: 101.6, change: 7.4, color: '#eab308' },
+            { id: 64, treat: 'FT', pre: 73.4, post: 94.9, change: 21.5, color: '#eab308' },
+            { id: 2, treat: 'Cont', pre: 89.4, post: 80.1, change: -9.3, color: '#666' },
+            { id: 7, treat: 'Cont', pre: 87.3, post: 75.1, change: -12.2, color: '#666' },
+            { id: 9, treat: 'Cont', pre: 80.6, post: 73.5, change: -7.1, color: '#666' }
+        ];
+
+        const treatmentEffectiveness = [
+            { factor: '체중 증가 (Weight Gain)', control: 20, cbt: 65, ft: 85 },
+            { factor: '회복률 (Recovery Rate)', control: 15, cbt: 55, ft: 75 },
+            { factor: '개선도 (Improvement)', control: 25, cbt: 70, ft: 88 },
+            { factor: '안정성 (Stability)', control: 40, cbt: 68, ft: 80 },
+            { factor: '성공률 (Success Rate)', control: 18, cbt: 62, ft: 82 }
+        ];
+
+        // 배경 프랙탈 애니메이션
+        function initBackgroundParticles() {
+            const canvas = document.getElementById('backgroundCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            let time = 0;
+
+            class FractalSwirl {
+                constructor(x, y, hue) {
+                    this.x = x;
+                    this.y = y;
+                    this.hue = hue;
+                    this.size = Math.random() * 3 + 1;
+                    this.speed = Math.random() * 0.02 + 0.01;
+                }
+
+                draw(t) {
+                    const angle = t * this.speed;
+                    const radius = 50 + Math.sin(t * 0.05) * 30;
+                    const spiralX = this.x + Math.cos(angle) * radius;
+                    const spiralY = this.y + Math.sin(angle) * radius;
+
+                    const gradient = ctx.createRadialGradient(spiralX, spiralY, 0, spiralX, spiralY, this.size * 3);
+                    gradient.addColorStop(0, `hsla(${this.hue + t * 0.5}, 80%, 60%, 0.8)`);
+                    gradient.addColorStop(0.5, `hsla(${this.hue + t * 0.5}, 70%, 50%, 0.4)`);
+                    gradient.addColorStop(1, `hsla(${this.hue + t * 0.5}, 60%, 40%, 0)`);
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(spiralX, spiralY, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = `hsla(${this.hue + t * 0.5}, 70%, 50%, 0.2)`;
+                    ctx.lineWidth = 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    ctx.lineTo(spiralX, spiralY);
+                    ctx.stroke();
+                }
+            }
+
+            const swirls = [];
+            for (let i = 0; i < 15; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const hue = Math.random() * 60 + 100;
+                swirls.push(new FractalSwirl(x, y, hue));
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(10, 15, 20, 0.08)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                time += 1;
+                swirls.forEach(swirl => swirl.draw(time));
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        // 마우스 따라가기
+        function initMouseFollow() {
+            const mouseFollow = document.getElementById('mouseFollow');
+            document.addEventListener('mousemove', (e) => {
+                mouseFollow.style.left = (e.clientX - 192) + 'px';
+                mouseFollow.style.top = (e.clientY - 192) + 'px';
+            });
+        }
+
+        // Treatment Chart 그리기
+        function drawTreatmentChart() {
+            const canvas = document.getElementById('treatmentChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 450;
+
+            const padding = { top: 40, right: 40, bottom: 80, left: 80 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = padding.top + (chartHeight / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 바 차트
+            const barWidth = chartWidth / (treatmentComparison.length * 3);
+            const maxWeight = 100;
+            const colors = ['#666', '#22c55e', '#eab308'];
+
+            treatmentComparison.forEach((group, i) => {
+                const x = padding.left + (i + 0.5) * (chartWidth / treatmentComparison.length);
+
+                // Pre-weight 바
+                const preHeight = (group.prewt / maxWeight) * chartHeight;
+                ctx.fillStyle = colors[i] + '99';
+                ctx.fillRect(x - barWidth, padding.top + chartHeight - preHeight, barWidth * 2, preHeight);
+                ctx.strokeStyle = colors[i];
+                ctx.lineWidth = 2;
+                ctx.strokeRect(x - barWidth, padding.top + chartHeight - preHeight, barWidth * 2, preHeight);
+
+                // Post-weight 바
+                const postHeight = (group.postwt / maxWeight) * chartHeight;
+                ctx.fillStyle = colors[i];
+                ctx.fillRect(x - barWidth, padding.top + chartHeight - postHeight, barWidth * 2, postHeight);
+                ctx.strokeStyle = colors[i];
+                ctx.strokeRect(x - barWidth, padding.top + chartHeight - postHeight, barWidth * 2, postHeight);
+
+                // 레이블
+                ctx.fillStyle = '#22c55e';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(group.group, x, canvas.height - padding.bottom + 20);
+            });
+
+            // Y축 레이블
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 10; i++) {
+                const value = (10 - i) * 10;
+                const y = padding.top + (chartHeight / 10) * i;
+                ctx.fillText(value + ' kg', padding.left - 10, y + 5);
+            }
+
+            // 통계 박스 생성
+            const statsGrid = document.getElementById('treatmentStats');
+            statsGrid.innerHTML = '';
+
+            const koreanLabels = {
+                'Control': '대조군 평균 변화량',
+                'CBT': 'CBT 평균 변화량',
+                'Family Therapy': '가족 치료 평균 변화량'
+            };
+
+            treatmentComparison.forEach((group, i) => {
+                const statBox = document.createElement('div');
+                statBox.className = 'stat-box';
+                statBox.style.background = `radial-gradient(circle, ${group.color}20, transparent)`;
+                statBox.style.borderColor = `${group.color}40`;
+                statBox.style.animationDelay = (i * 0.15) + 's';
+                statBox.innerHTML = `
+                    <div class="stat-value" style="color: ${group.color};">+${group.change.toFixed(1)} kg</div>
+                    <div class="stat-label">${koreanLabels[group.group]}</div>
+                `;
+                statsGrid.appendChild(statBox);
+            });
+        }
+
+        // Progress Chart 그리기
+        function drawProgressChart() {
+            const canvas = document.getElementById('progressChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+
+            const padding = { top: 40, right: 40, bottom: 60, left: 80 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = padding.left + (chartWidth / 10) * i;
+                const y = padding.top + (chartHeight / 10) * i;
+
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + chartHeight);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 데이터 포인트
+            const minPre = 65;
+            const maxPre = 100;
+            const minPost = 70;
+            const maxPost = 105;
+
+            patientProgress.forEach(item => {
+                const x = padding.left + ((item.pre - minPre) / (maxPre - minPre)) * chartWidth;
+                const y = padding.top + chartHeight - ((item.post - minPost) / (maxPost - minPost)) * chartHeight;
+                const size = 8 + Math.abs(item.change) * 0.5;
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = item.color + 'CC';
+                ctx.fill();
+                ctx.strokeStyle = item.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // 축 레이블
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Pre-Weight (kg)', padding.left + chartWidth / 2, canvas.height - padding.bottom + 40);
+
+            ctx.save();
+            ctx.translate(padding.left - 40, padding.top + chartHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Post-Weight (kg)', 0, 0);
+            ctx.restore();
+        }
+
+        // Effectiveness Chart 그리기
+        function drawEffectivenessChart() {
+            const canvas = document.getElementById('effectivenessChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 80;
+            const numFactors = treatmentEffectiveness.length;
+            const angleStep = (Math.PI * 2) / numFactors;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드 원
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (radius / 5) * i, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // 축선
+            ctx.strokeStyle = 'rgba(34, 197, 94, 0.5)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < numFactors; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * radius,
+                    centerY + Math.sin(angle) * radius
+                );
+                ctx.stroke();
+            }
+
+            // 데이터 영역 그리기
+            const groups = [
+                { key: 'control', color: '#666', opacity: 0.3 },
+                { key: 'cbt', color: '#22c55e', opacity: 0.5 },
+                { key: 'ft', color: '#eab308', opacity: 0.5 }
+            ];
+
+            groups.forEach(group => {
+                ctx.beginPath();
+                treatmentEffectiveness.forEach((item, i) => {
+                    const angle = i * angleStep - Math.PI / 2;
+                    const value = (item[group.key] / 100) * radius;
+                    const x = centerX + Math.cos(angle) * value;
+                    const y = centerY + Math.sin(angle) * value;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                });
+                ctx.closePath();
+
+                ctx.fillStyle = group.color + Math.floor(group.opacity * 255).toString(16).padStart(2, '0');
+                ctx.fill();
+                ctx.strokeStyle = group.color;
+                ctx.lineWidth = group.key === 'control' ? 2 : 3;
+                ctx.stroke();
+            });
+
+            // 레이블
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            treatmentEffectiveness.forEach((item, i) => {
+                const angle = i * angleStep - Math.PI / 2;
+                const labelRadius = radius + 40;
+                const x = centerX + Math.cos(angle) * labelRadius;
+                const y = centerY + Math.sin(angle) * labelRadius;
+                ctx.fillText(item.factor, x, y);
+            });
+        }
+
+        // 탭 전환
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab-button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const section = tab.dataset.tab;
+                    document.getElementById('treatmentSection').classList.add('hidden');
+                    document.getElementById('progressSection').classList.add('hidden');
+                    document.getElementById('effectivenessSection').classList.add('hidden');
+
+                    if (section === 'treatment') {
+                        document.getElementById('treatmentSection').classList.remove('hidden');
+                        setTimeout(drawTreatmentChart, 100);
+                    } else if (section === 'progress') {
+                        document.getElementById('progressSection').classList.remove('hidden');
+                        setTimeout(drawProgressChart, 100);
+                        createProgressLegend();
+                    } else if (section === 'effectiveness') {
+                        document.getElementById('effectivenessSection').classList.remove('hidden');
+                        setTimeout(drawEffectivenessChart, 100);
+                    }
+                });
+            });
+        }
+
+        // Progress 범례 생성
+        function createProgressLegend() {
+            const legend = document.getElementById('progressLegend');
+            legend.innerHTML = '';
+            [
+                { label: 'Control Group', color: '#666' },
+                { label: 'CBT Therapy', color: '#22c55e' },
+                { label: 'Family Therapy', color: '#eab308' }
+            ].forEach((item, i) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.style.animationDelay = (i * 0.1) + 's';
+                legendItem.innerHTML = `
+                    <div class="legend-dot" style="background-color: ${item.color};"></div>
+                    <span class="legend-text">${item.label}</span>
+                `;
+                legend.appendChild(legendItem);
+            });
+        }
+
+        // 초기화
+        window.addEventListener('load', () => {
+            initBackgroundParticles();
+            initMouseFollow();
+            initTabs();
+            drawTreatmentChart();
+
+            window.addEventListener('resize', () => {
+                drawTreatmentChart();
+                drawProgressChart();
+                drawEffectivenessChart();
+            });
+        });
+    </script>
+</body>
+
+</html>

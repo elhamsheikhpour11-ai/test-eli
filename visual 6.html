@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>섭식 장애 설문조사 분석 - XAI 시각화</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a1f1a 0%, #1a3a2e 50%, #0f2920 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .back-button::before {
+            content: '←';
+            font-size: 18px;
+        }
+
+        .background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: screen;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to bottom, transparent, rgba(5, 46, 22, 0.2), rgba(15, 23, 42, 0.4));
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            padding: 32px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 64px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ff0080 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 5px rgba(255, 0, 128, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 20px rgba(255, 0, 128, 0.8));
+            }
+        }
+
+        .subtitle {
+            font-size: 24px;
+            font-weight: 300;
+            color: #00ff88;
+            letter-spacing: 2px;
+        }
+
+        .tags {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 12px;
+            font-weight: 300;
+            color: rgba(0, 255, 136, 0.6);
+            letter-spacing: 4px;
+        }
+
+        .tags span {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .tags span:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .tags span:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-bottom: 64px;
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .metric-card {
+            position: relative;
+            padding: 32px;
+            overflow: hidden;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 0, 128, 0.3);
+            background: radial-gradient(circle at 30% 30%, rgba(255, 0, 128, 0.15), transparent);
+            cursor: pointer;
+            transition: all 0.5s ease;
+            animation: fadeInUp 0.8s ease-out both, float 6s ease-in-out infinite;
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+
+        .metric-value {
+            font-size: 48px;
+            font-weight: 900;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #00ff88;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 16px 32px;
+            border-radius: 999px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 14px;
+            transition: all 0.5s ease;
+            border: 1px solid rgba(0, 255, 136, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+            color: #00ff88;
+            cursor: pointer;
+        }
+
+        .tab-button:hover {
+            color: #ff3399;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #ff0080, #00ff88);
+            border: none;
+            color: #0a1f1a;
+            box-shadow: 0 10px 30px rgba(255, 0, 128, 0.5);
+        }
+
+        .chart-container {
+            max-width: 1280px;
+            margin: 0 auto 32px;
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            background: rgba(255, 0, 128, 0.05);
+            border: 1px solid rgba(255, 0, 128, 0.2);
+        }
+
+        .chart-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #ff3399;
+            margin-bottom: 32px;
+            letter-spacing: 2px;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .radar-chart {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .scatter-chart {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+        }
+
+        .legend {
+            margin-top: 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .legend-text {
+            font-size: 12px;
+            color: #00ff88;
+            font-weight: 300;
+        }
+
+        .footer {
+            margin-top: 64px;
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: rgba(0, 255, 136, 0.4);
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+
+        .footer-line {
+            margin-top: 16px;
+            width: 256px;
+            height: 1px;
+            margin-left: auto;
+            margin-right: auto;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-button">Back</a>
+    <canvas class="background-canvas" id="backgroundCanvas"></canvas>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">섭식 장애 설문조사 분석</h1>
+            <div class="subtitle">XAI 기반 데이터 시각화 및 패턴 분석</div>
+            <div class="tags">
+                <span>◉ EATING DISORDERS</span>
+                <span>◉ PSYCHOLOGICAL IMPACT</span>
+                <span>◉ MODEL INDUSTRY</span>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card" style="animation-delay: 0s;">
+                <div class="metric-value" style="color: #ff0080;" id="metric1">68%</div>
+                <div class="metric-label">High Risk Models</div>
+            </div>
+            <div class="metric-card" style="animation-delay: 0.1s;">
+                <div class="metric-value" style="color: #ff3399;" id="metric2">2,847</div>
+                <div class="metric-label">Survey Participants</div>
+            </div>
+            <div class="metric-card" style="animation-delay: 0.2s;">
+                <div class="metric-value" style="color: #00ff88;" id="metric3">45%</div>
+                <div class="metric-label">Awareness Rate</div>
+            </div>
+            <div class="metric-card" style="animation-delay: 0.3s;">
+                <div class="metric-value" style="color: #1aff94;" id="metric4">92%</div>
+                <div class="metric-label">Industry Impact</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="flow">〰 Flow Analysis</button>
+            <button class="tab-button" data-tab="web">◈ Psych Web</button>
+            <button class="tab-button" data-tab="bubbles">◉ Risk Bubbles</button>
+        </div>
+
+        <div id="flowSection" class="chart-container">
+            <h2 class="chart-title">◉ Age-Based Disorder Flow</h2>
+            <p
+                style="text-align: center; color: rgba(0, 255, 136, 0.8); margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 차트는 다양한 연령대에서 나타나는 섭식 장애 유형의 변화와 흐름을 시각적으로 보여줍니다. 연령이 증가함에 따라 어떤 유형의 섭식 장애가 주로 나타나는지 파악할 수
+                있습니다.<br><br>
+                분홍색 계열은 섭식 장애(거식증, 폭식증 등)를, 초록색은 건강한 상태를 나타냅니다. 세로축의 퍼센트(%)는 해당 연령대 내에서의 각 상태별 비율을 의미합니다.
+            </p>
+            <canvas class="chart-canvas" id="flowChart"></canvas>
+        </div>
+
+        <div id="webSection" class="chart-container hidden">
+            <h2 class="chart-title" style="color: #00ff88; text-align: center;">◈ Psychological Factor Web</h2>
+            <p
+                style="text-align: center; color: rgba(0, 255, 136, 0.8); margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 레이더 차트는 섭식 장애에 영향을 미치는 다양한 심리적 요인들을 시각화한 것입니다. 중심에서 멀어질수록 해당 요인의 영향력이나 스트레스 수준이 높음을 의미합니다.
+            </p>
+            <canvas class="radar-chart" id="radarChart"></canvas>
+        </div>
+
+        <div id="bubblesSection" class="chart-container hidden">
+            <h2 class="chart-title" style="text-align: center;">◉ Occupation Risk Landscape</h2>
+            <p
+                style="text-align: center; color: rgba(0, 255, 136, 0.8); margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 산점도는 다양한 직업군에서의 섭식 장애 위험도(Risk Level)와 영향력(Impact)을 보여줍니다. 원의 크기는 해당 직업군의 표본 수를 나타내며, 우측 상단에 위치할수록
+                위험도와 영향력이 모두 높음을 의미합니다.
+            </p>
+            <canvas class="scatter-chart" id="scatterChart"></canvas>
+            <div class="legend" id="legend"></div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-text">◉ SAMPLE DATA VISUALIZATION ◉ XAI ANALYSIS ◉ 2024</div>
+            <div class="footer-text" style="margin-top: 10px;">
+                <a href="https://www.kaggle.com/code/jocelyndumlao/analyzing-eating-disorder-survey-data-with-xai#Data-Loading-and-Initial-Inspection"
+                    target="_blank"
+                    style="color: rgba(0, 255, 136, 0.4); text-decoration: none; transition: color 0.3s;">
+                    원본 사이트: Kaggle Notebook
+                </a>
+            </div>
+            <div class="footer-line"></div>
+        </div>
+    </div>
+
+    <script>
+        // 데이터
+        const disorderFlowData = [
+            { age: '13-15', anorexia: 12, bulimia: 8, binge: 15, healthy: 65 },
+            { age: '16-18', anorexia: 24, bulimia: 18, binge: 28, healthy: 30 },
+            { age: '19-22', anorexia: 38, bulimia: 32, binge: 42, healthy: 18 },
+            { age: '23-26', anorexia: 35, bulimia: 28, binge: 38, healthy: 22 },
+            { age: '27-30', anorexia: 28, bulimia: 22, binge: 30, healthy: 35 },
+            { age: '31+', anorexia: 18, bulimia: 15, binge: 22, healthy: 50 }
+        ];
+
+        const psychologicalWeb = [
+            { factor: 'Self-Esteem', value: 35 },
+            { factor: 'Body Image', value: 28 },
+            { factor: 'Social Pressure', value: 82 },
+            { factor: 'Media Impact', value: 88 },
+            { factor: 'Perfectionism', value: 75 },
+            { factor: 'Control Issues', value: 68 },
+            { factor: 'Stress Level', value: 79 },
+            { factor: 'Support System', value: 42 }
+        ];
+
+        const occupationBubbles = [
+            { occupation: 'Runway Model', risk: 92, impact: 95, count: 245, color: '#ff0000' },
+            { occupation: 'Fashion Model', risk: 88, impact: 90, count: 380, color: '#e60000' },
+            { occupation: 'Fitness Model', risk: 75, impact: 80, count: 420, color: '#ff3399' },
+            { occupation: 'Commercial', risk: 65, impact: 70, count: 520, color: '#ff4da6' },
+            { occupation: 'Plus Size', risk: 55, impact: 60, count: 180, color: '#00ff88' },
+            { occupation: 'Parts Model', risk: 48, impact: 52, count: 280, color: '#1aff94' },
+            { occupation: 'General Public', risk: 35, impact: 45, count: 822, color: '#33ffa0' }
+        ];
+
+        // 배경 파티클 애니메이션
+        function initBackgroundParticles() {
+            const canvas = document.getElementById('backgroundCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            class FluidParticle {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.vx = (Math.random() - 0.5) * 2;
+                    this.vy = (Math.random() - 0.5) * 2;
+                    this.radius = Math.random() * 80 + 40;
+                    this.color = Math.random() > 0.5 ? '#ff0080' : '#00ff88';
+                    this.opacity = Math.random() * 0.3 + 0.1;
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < -100 || this.x > canvas.width + 100 ||
+                        this.y < -100 || this.y > canvas.height + 100) {
+                        this.reset();
+                    }
+                }
+
+                draw() {
+                    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                    const alpha = Math.floor(this.opacity * 255).toString(16).padStart(2, '0');
+                    gradient.addColorStop(0, this.color + alpha);
+                    gradient.addColorStop(1, this.color + '00');
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const fluidParticles = Array(15).fill(0).map(() => new FluidParticle());
+
+            function animate() {
+                ctx.fillStyle = 'rgba(16, 35, 30, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                fluidParticles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        // Flow Chart 그리기
+        function drawFlowChart() {
+            const canvas = document.getElementById('flowChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 400;
+
+            const padding = { top: 40, right: 40, bottom: 60, left: 60 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = padding.top + (chartHeight / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 데이터 포인트 계산
+            const maxValue = 100;
+            const xStep = chartWidth / (disorderFlowData.length - 1);
+            const colors = {
+                anorexia: '#ff0080',
+                bulimia: '#ff3399',
+                binge: '#ff66b2',
+                healthy: '#00ff88'
+            };
+
+            // Area 차트 그리기
+            ['healthy', 'binge', 'bulimia', 'anorexia'].forEach((key, idx) => {
+                const points = disorderFlowData.map((d, i) => ({
+                    x: padding.left + i * xStep,
+                    y: padding.top + chartHeight - (d[key] / maxValue) * chartHeight
+                }));
+
+                // 누적 값 계산
+                let cumulative = 0;
+                disorderFlowData.forEach((d, i) => {
+                    if (idx > 0) {
+                        cumulative += disorderFlowData[i][['healthy', 'binge', 'bulimia', 'anorexia'][idx - 1]];
+                    }
+                });
+
+                // Area 그리기
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, padding.top + chartHeight);
+
+                points.forEach((p, i) => {
+                    if (i === 0) {
+                        ctx.lineTo(p.x, p.y);
+                    } else {
+                        const prevY = i > 0 ? points[i - 1].y : padding.top + chartHeight;
+                        const cp1x = points[i - 1].x + xStep / 2;
+                        const cp1y = prevY;
+                        const cp2x = p.x - xStep / 2;
+                        const cp2y = p.y;
+                        ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p.x, p.y);
+                    }
+                });
+
+                ctx.lineTo(points[points.length - 1].x, padding.top + chartHeight);
+                ctx.closePath();
+
+                const gradient = ctx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+                gradient.addColorStop(0, colors[key] + 'CC');
+                gradient.addColorStop(1, colors[key] + '1A');
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                ctx.strokeStyle = colors[key];
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            });
+
+            // X축 레이블
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            disorderFlowData.forEach((d, i) => {
+                ctx.fillText(d.age, padding.left + i * xStep, canvas.height - padding.bottom + 20);
+            });
+
+            // Y축 레이블
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 10; i++) {
+                const value = (10 - i) * 10;
+                const y = padding.top + (chartHeight / 10) * i;
+                ctx.fillText(value + '%', padding.left - 10, y + 5);
+            }
+        }
+
+        // Radar Chart 그리기
+        function drawRadarChart() {
+            const canvas = document.getElementById('radarChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 60;
+            const numFactors = psychologicalWeb.length;
+            const angleStep = (Math.PI * 2) / numFactors;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드 원
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (radius / 5) * i, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // 축선
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.5)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < numFactors; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * radius,
+                    centerY + Math.sin(angle) * radius
+                );
+                ctx.stroke();
+            }
+
+            // 데이터 영역
+            ctx.beginPath();
+            psychologicalWeb.forEach((item, i) => {
+                const angle = i * angleStep - Math.PI / 2;
+                const value = (item.value / 100) * radius;
+                const x = centerX + Math.cos(angle) * value;
+                const y = centerY + Math.sin(angle) * value;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+
+            ctx.fillStyle = 'rgba(255, 0, 128, 0.6)';
+            ctx.fill();
+            ctx.strokeStyle = '#ff0080';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 레이블
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            psychologicalWeb.forEach((item, i) => {
+                const angle = i * angleStep - Math.PI / 2;
+                const labelRadius = radius + 30;
+                const x = centerX + Math.cos(angle) * labelRadius;
+                const y = centerY + Math.sin(angle) * labelRadius;
+                ctx.fillText(item.factor, x, y);
+            });
+        }
+
+        // Scatter Chart 그리기
+        function drawScatterChart() {
+            const canvas = document.getElementById('scatterChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+
+            const padding = { top: 40, right: 40, bottom: 60, left: 80 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = padding.left + (chartWidth / 10) * i;
+                const y = padding.top + (chartHeight / 10) * i;
+
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + chartHeight);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 데이터 포인트
+            const maxRisk = 100;
+            const maxImpact = 100;
+            const minSize = 10;
+            const maxSize = 30;
+
+            occupationBubbles.forEach(item => {
+                const x = padding.left + (item.risk / maxRisk) * chartWidth;
+                const y = padding.top + chartHeight - (item.impact / maxImpact) * chartHeight;
+                const size = minSize + (item.count / 1000) * (maxSize - minSize);
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = item.color + 'B3';
+                ctx.fill();
+                ctx.strokeStyle = item.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // 축 레이블
+            ctx.fillStyle = '#00ff88';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Risk Level (%)', padding.left + chartWidth / 2, canvas.height - padding.bottom + 40);
+
+            ctx.save();
+            ctx.translate(padding.left - 40, padding.top + chartHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Impact (%)', 0, 0);
+            ctx.restore();
+        }
+
+        // 탭 전환
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab-button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const section = tab.dataset.tab;
+                    document.getElementById('flowSection').classList.add('hidden');
+                    document.getElementById('webSection').classList.add('hidden');
+                    document.getElementById('bubblesSection').classList.add('hidden');
+
+                    if (section === 'flow') {
+                        document.getElementById('flowSection').classList.remove('hidden');
+                        setTimeout(drawFlowChart, 100);
+                    } else if (section === 'web') {
+                        document.getElementById('webSection').classList.remove('hidden');
+                        setTimeout(drawRadarChart, 100);
+                    } else if (section === 'bubbles') {
+                        document.getElementById('bubblesSection').classList.remove('hidden');
+                        setTimeout(drawScatterChart, 100);
+                    }
+                });
+            });
+        }
+
+        // 범례 생성
+        function createLegend() {
+            const legend = document.getElementById('legend');
+            occupationBubbles.forEach(occ => {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <div class="legend-dot" style="background-color: ${occ.color};"></div>
+                    <span class="legend-text">${occ.occupation}</span>
+                `;
+                legend.appendChild(item);
+            });
+        }
+
+        // 초기화
+        window.addEventListener('load', () => {
+            initBackgroundParticles();
+            initTabs();
+            createLegend();
+            drawFlowChart();
+
+            window.addEventListener('resize', () => {
+                drawFlowChart();
+                drawRadarChart();
+                drawScatterChart();
+            });
+        });
+    </script>
+</body>
+
+</html>

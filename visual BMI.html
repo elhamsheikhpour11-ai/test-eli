@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI 분석 - Body Mass Index Data Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #f5e6dc 0%, #e8d5cc 50%, #d9c4b8 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.3);
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(0, 0, 0, 0.3);
+            transform: translateX(-3px);
+        }
+
+        .back-button::before {
+            content: '←';
+            font-size: 18px;
+        }
+
+        .background-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            mix-blend-mode: multiply;
+            opacity: 0.6;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent, rgba(255, 213, 204, 0.2));
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            padding: 32px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 64px;
+            position: relative;
+        }
+
+        .title {
+            font-size: 56px;
+            font-weight: 900;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ff3333 0%, #3366ff 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                filter: drop-shadow(0 0 10px rgba(255, 51, 51, 0.5));
+            }
+
+            50% {
+                filter: drop-shadow(0 0 25px rgba(255, 51, 51, 0.8));
+            }
+        }
+
+        .subtitle {
+            font-size: 24px;
+            font-weight: 300;
+            color: #ff3333;
+            letter-spacing: 2px;
+        }
+
+        .tags {
+            margin-top: 24px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 12px;
+            font-weight: 300;
+            color: #666;
+            letter-spacing: 4px;
+        }
+
+        .tags span {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .tags span:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .tags span:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 64px;
+            max-width: 1152px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .metric-card {
+            position: relative;
+            padding: 24px;
+            overflow: hidden;
+            border-radius: 24px;
+            border: 2px solid;
+            cursor: pointer;
+            transition: all 0.5s ease;
+            animation: fadeInUp 0.8s ease-out both, float 6s ease-in-out infinite;
+        }
+
+        .metric-card:hover {
+            transform: scale(1.05);
+        }
+
+        .metric-value {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 48px;
+            flex-wrap: wrap;
+        }
+
+        .tab-button {
+            padding: 16px 32px;
+            border-radius: 999px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            font-size: 14px;
+            transition: all 0.5s ease;
+            border: 2px solid rgba(255, 51, 51, 0.3);
+            background: rgba(255, 255, 255, 0.8);
+            color: #666;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-button:hover {
+            color: #ff3333;
+        }
+
+        .tab-button.active {
+            background: linear-gradient(135deg, #ff3333, #3366ff);
+            border: none;
+            color: white;
+            box-shadow: 0 10px 30px rgba(255, 51, 51, 0.5);
+        }
+
+        .chart-container {
+            max-width: 1152px;
+            margin: 0 auto 32px;
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid rgba(255, 51, 51, 0.2);
+            box-shadow: 0 20px 60px rgba(255, 51, 51, 0.15);
+        }
+
+        .chart-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: #ff3333;
+            margin-bottom: 32px;
+            letter-spacing: 2px;
+        }
+
+        .chart-canvas {
+            width: 100%;
+            height: 450px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+        }
+
+        .radar-chart {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+        }
+
+        .scatter-chart {
+            width: 100%;
+            height: 500px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 12px;
+        }
+
+        .legend {
+            margin-top: 32px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .legend-item:hover {
+            transform: scale(1.1);
+        }
+
+        .legend-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .legend-text {
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 64px;
+            text-align: center;
+        }
+
+        .footer-text {
+            font-size: 12px;
+            color: #999;
+            letter-spacing: 4px;
+            font-weight: 300;
+        }
+
+        .footer-line {
+            margin-top: 16px;
+            width: 256px;
+            height: 1px;
+            margin-left: auto;
+            margin-right: auto;
+            background: linear-gradient(90deg, transparent, #ff3333, transparent);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="index.html" class="back-button">Back</a>
+    <canvas class="background-canvas" id="backgroundCanvas"></canvas>
+    <div class="overlay"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="title">BMI 분석</h1>
+            <div class="subtitle">Body Mass Index Data Visualization</div>
+            <div class="tags">
+                <span>◉ HEIGHT</span>
+                <span>◉ WEIGHT</span>
+                <span>◉ BMI INDEX</span>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card"
+                style="border-color: rgba(255, 51, 51, 0.4); background: radial-gradient(circle at 30% 30%, rgba(255, 51, 51, 0.2), rgba(255, 255, 255, 0.95)); animation-delay: 0s;">
+                <div class="metric-value" style="color: #ff3333;" id="metric1">500</div>
+                <div class="metric-label">Total Samples</div>
+            </div>
+            <div class="metric-card"
+                style="border-color: rgba(51, 102, 255, 0.4); background: radial-gradient(circle at 30% 30%, rgba(51, 102, 255, 0.2), rgba(255, 255, 255, 0.95)); animation-delay: 0.1s;">
+                <div class="metric-value" style="color: #3366ff;" id="metric2">250</div>
+                <div class="metric-label">Male</div>
+            </div>
+            <div class="metric-card"
+                style="border-color: rgba(255, 102, 170, 0.4); background: radial-gradient(circle at 30% 30%, rgba(255, 102, 170, 0.2), rgba(255, 255, 255, 0.95)); animation-delay: 0.2s;">
+                <div class="metric-value" style="color: #ff66aa;" id="metric3">250</div>
+                <div class="metric-label">Female</div>
+            </div>
+            <div class="metric-card"
+                style="border-color: rgba(255, 136, 68, 0.4); background: radial-gradient(circle at 30% 30%, rgba(255, 136, 68, 0.2), rgba(255, 255, 255, 0.95)); animation-delay: 0.3s;">
+                <div class="metric-value" style="color: #ff8844;" id="metric4">3.2</div>
+                <div class="metric-label">Avg BMI</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="distribution">◐ BMI Distribution</button>
+            <button class="tab-button" data-tab="scatter">◉ Height-Weight</button>
+            <button class="tab-button" data-tab="risk">◈ Health Risk</button>
+        </div>
+
+        <div id="distributionSection" class="chart-container">
+            <h2 class="chart-title">◐ BMI Category Distribution by Gender</h2>
+            <p style="text-align: center; color: #ff3333; margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 차트는 성별에 따른 BMI 카테고리 분포를 보여줍니다. 파란색은 남성, 빨간색은 여성을 나타내며, 각 BMI 범주별 인원수를 비교할 수 있습니다.
+            </p>
+            <canvas class="chart-canvas" id="distributionChart"></canvas>
+        </div>
+
+        <div id="scatterSection" class="chart-container hidden">
+            <h2 class="chart-title" style="text-align: center; color: #3366ff;">◉ Height-Weight Correlation</h2>
+            <p style="text-align: center; color: #3366ff; margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 산점도는 키와 체중의 상관관계를 보여줍니다. 점의 크기와 색상은 BMI 지수를 나타내며, 각 개인의 신체 상태를 한눈에 파악할 수 있습니다.
+            </p>
+            <canvas class="scatter-chart" id="scatterChart"></canvas>
+            <div class="legend" id="scatterLegend"></div>
+        </div>
+
+        <div id="riskSection" class="chart-container hidden">
+            <h2 class="chart-title" style="text-align: center;">◈ Health Risk by BMI Index</h2>
+            <p style="text-align: center; color: #ff3333; margin-bottom: 20px; font-weight: 300; font-size: 14px;">
+                이 레이더 차트는 BMI 지수별 건강 위험도를 보여줍니다. 중심에서 멀어질수록 건강 위험이 높음을 의미하며, 각 BMI 범주의 위험 수준을 비교할 수 있습니다.
+            </p>
+            <canvas class="radar-chart" id="riskChart"></canvas>
+        </div>
+
+        <div class="footer">
+            <div class="footer-text">◉ BMI DATA ANALYSIS ◉ HEALTH VISUALIZATION ◉ 2024</div>
+            <div class="footer-text" style="margin-top: 10px;">
+                <a href="https://www.kaggle.com/datasets/yasserh/bmidataset/data" target="_blank"
+                    style="color: #999; text-decoration: none; transition: color 0.3s;"
+                    onmouseover="this.style.color='#ff3333'" onmouseout="this.style.color='#999'">
+                    원본 사이트: Kaggle Dataset
+                </a>
+            </div>
+            <div class="footer-line"></div>
+        </div>
+    </div>
+
+    <script>
+        // 데이터
+        const bmiDistribution = [
+            { category: '극도 저체중\n(Extremely Weak)', male: 12, female: 10, index: 0 },
+            { category: '저체중\n(Weak)', male: 28, female: 24, index: 1 },
+            { category: '정상\n(Normal)', male: 89, female: 95, index: 2 },
+            { category: '과체중\n(Overweight)', male: 72, female: 68, index: 3 },
+            { category: '비만\n(Obesity)', male: 115, female: 109, index: 4 },
+            { category: '고도 비만\n(Extreme Obesity)', male: 134, female: 144, index: 5 }
+        ];
+
+        const heightWeightCorr = [
+            { height: 140, weight: 52, bmi: 3, gender: 'Male', color: '#3b82f6' },
+            { height: 145, weight: 99, bmi: 5, gender: 'Male', color: '#ef4444' },
+            { height: 150, weight: 60, bmi: 3, gender: 'Female', color: '#8b5cf6' },
+            { height: 155, weight: 111, bmi: 5, gender: 'Female', color: '#ef4444' },
+            { height: 160, weight: 83, bmi: 4, gender: 'Female', color: '#f59e0b' },
+            { height: 165, weight: 80, bmi: 3, gender: 'Male', color: '#10b981' },
+            { height: 170, weight: 95, bmi: 4, gender: 'Male', color: '#f59e0b' },
+            { height: 175, weight: 120, bmi: 4, gender: 'Female', color: '#f59e0b' },
+            { height: 180, weight: 75, bmi: 2, gender: 'Male', color: '#10b981' },
+            { height: 185, weight: 140, bmi: 5, gender: 'Female', color: '#ef4444' },
+            { height: 190, weight: 95, bmi: 3, gender: 'Male', color: '#10b981' },
+            { height: 195, weight: 126, bmi: 4, gender: 'Male', color: '#f59e0b' },
+            { height: 142, weight: 131, bmi: 5, gender: 'Male', color: '#ef4444' },
+            { height: 153, weight: 51, bmi: 2, gender: 'Female', color: '#10b981' },
+            { height: 168, weight: 140, bmi: 5, gender: 'Female', color: '#ef4444' },
+            { height: 177, weight: 96, bmi: 4, gender: 'Female', color: '#f59e0b' },
+            { height: 188, weight: 81, bmi: 2, gender: 'Male', color: '#10b981' },
+            { height: 198, weight: 50, bmi: 0, gender: 'Male', color: '#6366f1' }
+        ];
+
+        const healthRisk = [
+            { index: 'Index 0', risk: 85, label: '극도 저체중 (Extremely Weak)' },
+            { index: 'Index 1', risk: 45, label: '저체중 (Weak)' },
+            { index: 'Index 2', risk: 10, label: '정상 (Normal)' },
+            { index: 'Index 3', risk: 30, label: '과체중 (Overweight)' },
+            { index: 'Index 4', risk: 65, label: '비만 (Obesity)' },
+            { index: 'Index 5', risk: 92, label: '고도 비만 (Extreme Obesity)' }
+        ];
+
+        // 배경 파티클 애니메이션
+        function initBackgroundParticles() {
+            const canvas = document.getElementById('backgroundCanvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            class FluidParticle {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.vx = (Math.random() - 0.5) * 1.5;
+                    this.vy = (Math.random() - 0.5) * 1.5;
+                    this.radius = Math.random() * 100 + 60;
+                    this.color = Math.random() > 0.5 ? '#ff3333' : '#3366ff';
+                    this.opacity = Math.random() * 0.4 + 0.15;
+                }
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    if (this.x < -100 || this.x > canvas.width + 100 ||
+                        this.y < -100 || this.y > canvas.height + 100) {
+                        this.reset();
+                    }
+                }
+
+                draw() {
+                    const gradient = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+                    const alpha = Math.floor(this.opacity * 255).toString(16).padStart(2, '0');
+                    gradient.addColorStop(0, this.color + alpha);
+                    gradient.addColorStop(0.5, this.color + '40');
+                    gradient.addColorStop(1, this.color + '00');
+
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const fluidParticles = Array(20).fill(0).map(() => new FluidParticle());
+
+            function animate() {
+                ctx.fillStyle = 'rgba(255, 250, 245, 0.15)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                fluidParticles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        // Distribution Chart 그리기
+        function drawDistributionChart() {
+            const canvas = document.getElementById('distributionChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 450;
+
+            const padding = { top: 40, right: 40, bottom: 100, left: 80 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(102, 102, 102, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const y = padding.top + (chartHeight / 10) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 바 차트
+            const maxValue = 150;
+            const barWidth = chartWidth / (bmiDistribution.length * 3);
+            const groupWidth = chartWidth / bmiDistribution.length;
+
+            bmiDistribution.forEach((item, i) => {
+                const groupX = padding.left + i * groupWidth;
+
+                // Male 바
+                const maleHeight = (item.male / maxValue) * chartHeight;
+                ctx.fillStyle = '#3366ff';
+                ctx.fillRect(groupX + barWidth, padding.top + chartHeight - maleHeight, barWidth, maleHeight);
+                ctx.strokeStyle = '#3366ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(groupX + barWidth, padding.top + chartHeight - maleHeight, barWidth, maleHeight);
+
+                // Female 바
+                const femaleHeight = (item.female / maxValue) * chartHeight;
+                ctx.fillStyle = '#ff3333';
+                ctx.fillRect(groupX + barWidth * 2, padding.top + chartHeight - femaleHeight, barWidth, femaleHeight);
+                ctx.strokeStyle = '#ff3333';
+                ctx.strokeRect(groupX + barWidth * 2, padding.top + chartHeight - femaleHeight, barWidth, femaleHeight);
+
+                // 레이블 (horizontal, multi-line)
+                ctx.fillStyle = '#666';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+
+                // Split label by newline for multi-line display
+                const lines = item.category.split('\n');
+                lines.forEach((line, lineIndex) => {
+                    ctx.fillText(line, groupX + groupWidth / 2, canvas.height - padding.bottom + 20 + (lineIndex * 14));
+                });
+            });
+
+            // Y축 레이블
+            ctx.fillStyle = '#666';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 10; i++) {
+                const value = (10 - i) * 15;
+                const y = padding.top + (chartHeight / 10) * i;
+                ctx.fillText(value, padding.left - 10, y + 5);
+            }
+
+            // 범례 (moved to bottom center)
+            const legendY = canvas.height - 30;
+            const legendCenterX = canvas.width / 2;
+
+            ctx.fillStyle = '#3366ff';
+            ctx.fillRect(legendCenterX - 80, legendY, 12, 12);
+            ctx.fillStyle = '#666';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('Male (남성)', legendCenterX - 60, legendY + 12);
+
+            ctx.fillStyle = '#ff3333';
+            ctx.fillRect(legendCenterX + 20, legendY, 12, 12);
+            ctx.fillText('Female (여성)', legendCenterX + 40, legendY + 12);
+        }
+
+        // Scatter Chart 그리기
+        function drawScatterChart() {
+            const canvas = document.getElementById('scatterChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+
+            const padding = { top: 40, right: 40, bottom: 60, left: 80 };
+            const chartWidth = canvas.width - padding.left - padding.right;
+            const chartHeight = canvas.height - padding.top - padding.bottom;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드
+            ctx.strokeStyle = 'rgba(102, 102, 102, 0.2)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                const x = padding.left + (chartWidth / 10) * i;
+                const y = padding.top + (chartHeight / 10) * i;
+
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + chartHeight);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + chartWidth, y);
+                ctx.stroke();
+            }
+
+            // 데이터 포인트
+            const minHeight = 135;
+            const maxHeight = 205;
+            const minWeight = 45;
+            const maxWeight = 165;
+
+            heightWeightCorr.forEach(item => {
+                const x = padding.left + ((item.height - minHeight) / (maxHeight - minHeight)) * chartWidth;
+                const y = padding.top + chartHeight - ((item.weight - minWeight) / (maxWeight - minWeight)) * chartHeight;
+                const size = 8 + item.bmi * 2;
+
+                ctx.beginPath();
+                ctx.arc(x, y, size, 0, Math.PI * 2);
+                ctx.fillStyle = item.color + 'CC';
+                ctx.fill();
+                ctx.strokeStyle = item.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            // 축 레이블
+            ctx.fillStyle = '#666';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Height (cm)', padding.left + chartWidth / 2, canvas.height - padding.bottom + 40);
+
+            ctx.save();
+            ctx.translate(padding.left - 40, padding.top + chartHeight / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText('Weight (kg)', 0, 0);
+            ctx.restore();
+        }
+
+        // Risk Chart 그리기
+        function drawRiskChart() {
+            const canvas = document.getElementById('riskChart');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement;
+
+            canvas.width = container.clientWidth;
+            canvas.height = 500;
+
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = Math.min(centerX, centerY) - 80;
+            const numFactors = healthRisk.length;
+            const angleStep = (Math.PI * 2) / numFactors;
+
+            // 배경
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 그리드 원
+            ctx.strokeStyle = 'rgba(255, 51, 51, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = 1; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (radius / 5) * i, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // 축선
+            ctx.strokeStyle = 'rgba(255, 51, 51, 0.5)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i < numFactors; i++) {
+                const angle = i * angleStep - Math.PI / 2;
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(
+                    centerX + Math.cos(angle) * radius,
+                    centerY + Math.sin(angle) * radius
+                );
+                ctx.stroke();
+            }
+
+            // 데이터 영역
+            ctx.beginPath();
+            healthRisk.forEach((item, i) => {
+                const angle = i * angleStep - Math.PI / 2;
+                const value = (item.risk / 100) * radius;
+                const x = centerX + Math.cos(angle) * value;
+                const y = centerY + Math.sin(angle) * value;
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+
+            ctx.fillStyle = 'rgba(255, 51, 51, 0.6)';
+            ctx.fill();
+            ctx.strokeStyle = '#ff3333';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 레이블
+            ctx.fillStyle = '#666';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            healthRisk.forEach((item, i) => {
+                const angle = i * angleStep - Math.PI / 2;
+                const labelRadius = radius + 40;
+                const x = centerX + Math.cos(angle) * labelRadius;
+                const y = centerY + Math.sin(angle) * labelRadius;
+                ctx.fillText(item.label, x, y);
+            });
+        }
+
+        // Scatter 범례 생성
+        function createScatterLegend() {
+            const legend = document.getElementById('scatterLegend');
+            legend.innerHTML = '';
+            [
+                { label: '극도 저체중 (Extremely Weak)', color: '#6366f1' },
+                { label: '저체중 (Weak)', color: '#3b82f6' },
+                { label: '정상 (Normal)', color: '#10b981' },
+                { label: '과체중 (Overweight)', color: '#f59e0b' },
+                { label: '비만 (Obesity)', color: '#ef4444' },
+                { label: '고도 비만 (Extreme Obesity)', color: '#991b1b' }
+            ].forEach((item, i) => {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.style.animationDelay = (i * 0.1) + 's';
+                legendItem.innerHTML = `
+                    <div class="legend-dot" style="background-color: ${item.color};"></div>
+                    <span class="legend-text">${item.label}</span>
+                `;
+                legend.appendChild(legendItem);
+            });
+        }
+
+        // 탭 전환
+        function initTabs() {
+            const tabs = document.querySelectorAll('.tab-button');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    const section = tab.dataset.tab;
+                    document.getElementById('distributionSection').classList.add('hidden');
+                    document.getElementById('scatterSection').classList.add('hidden');
+                    document.getElementById('riskSection').classList.add('hidden');
+
+                    if (section === 'distribution') {
+                        document.getElementById('distributionSection').classList.remove('hidden');
+                        setTimeout(drawDistributionChart, 100);
+                    } else if (section === 'scatter') {
+                        document.getElementById('scatterSection').classList.remove('hidden');
+                        setTimeout(drawScatterChart, 100);
+                        createScatterLegend();
+                    } else if (section === 'risk') {
+                        document.getElementById('riskSection').classList.remove('hidden');
+                        setTimeout(drawRiskChart, 100);
+                    }
+                });
+            });
+        }
+
+        // 초기화
+        window.addEventListener('load', () => {
+            initBackgroundParticles();
+            initTabs();
+            drawDistributionChart();
+
+            window.addEventListener('resize', () => {
+                drawDistributionChart();
+                drawScatterChart();
+                drawRiskChart();
+            });
+        });
+    </script>
+</body>
+
+</html>
