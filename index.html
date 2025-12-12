@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,8 +53,15 @@
         }
 
         @keyframes bgFloat {
-            0%, 100% { transform: scale(1) translate(0, 0); }
-            50% { transform: scale(1.1) translate(-20px, -20px); }
+
+            0%,
+            100% {
+                transform: scale(1) translate(0, 0);
+            }
+
+            50% {
+                transform: scale(1.1) translate(-20px, -20px);
+            }
         }
 
         .logo {
@@ -78,6 +86,7 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+
             from {
                 opacity: 0;
                 transform: translateY(-20px);
@@ -112,6 +121,7 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+
             from {
                 opacity: 0;
                 transform: translateY(30px);
@@ -128,12 +138,21 @@
         }
 
         @keyframes fadeIn {
-            to { opacity: 1; }
+            to {
+                opacity: 1;
+            }
         }
 
         @keyframes bounce {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(10px); }
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(10px);
+            }
         }
 
         .scroll-link {
@@ -342,8 +361,27 @@
             transform: translateY(-3px);
             box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
         }
+
+        .health-check-link:hover .card {
+            border-color: #556B2F !important;
+            /* Sludge green */
+            box-shadow: 0 15px 40px rgba(85, 107, 47, 0.2);
+        }
+
+        .anorexia-weight-link:hover .card {
+            border-color: #000080 !important;
+            /* Navy Blue */
+            box-shadow: 0 15px 40px rgba(0, 0, 128, 0.2);
+        }
+
+        .bmi-link:hover .card {
+            border-color: #8B0000 !important;
+            /* Liver Red / Dark Red */
+            box-shadow: 0 15px 40px rgba(139, 0, 0, 0.2);
+        }
     </style>
 </head>
+
 <body>
     <nav>
         <a href="#about">ABOUT</a>
@@ -357,7 +395,8 @@
             <h1 class="main-title">KOREA<br>MODEL</h1>
             <h2 class="subtitle">ASSOCIATION</h2>
             <div class="logo">
-                본 사이트는 모델 산업에 지원하고자 하는 분들께 사전에 필요한 정보를 안내하기 위해 제작된 가상의 협회 사이트입니다. 지원을 진행하시기 전에 사이트에 게시된 내용을 충분히 확인해 주시기 바랍니다
+                본 사이트는 모델 산업에 지원하고자 하는 분들께 사전에 필요한 정보를 안내하기 위해 제작된 가상의 협회 사이트입니다. 지원을 진행하시기 전에 사이트에 게시된 내용을 충분히 확인해 주시기
+                바랍니다
             </div>
         </div>
         <div class="scroll-indicator">
@@ -371,11 +410,12 @@
         <div class="content-wrapper">
             <h2 class="section-title">ABOUT US</h2>
             <p class="section-text">
-                한국 모델 협회는 국내외 패션 산업을 선도하는 전문 모델 에이전시입니다. 
+                한국 모델 협회는 국내외 패션 산업을 선도하는 전문 모델 에이전시입니다.
                 우리는 재능있는 모델들을 발굴하고 육성하여 글로벌 무대에서 활약할 수 있도록 지원합니다.
                 전문성과 창의성을 바탕으로 패션 산업의 새로운 기준을 제시합니다.
             </p>
-            <p class="section-text" style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-left: 3px solid rgba(255, 255, 255, 0.3); border-radius: 5px;">
+            <p class="section-text"
+                style="margin-top: 20px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-left: 3px solid rgba(255, 255, 255, 0.3); border-radius: 5px;">
                 본 웹사이트는 지원을 준비하는 여러분께 필요한 정보를 제공하기 위해 구성되었습니다. 지원을 진행하기 전에 아래의 내용을 반드시 충분히 읽고 이해해 주시기 바랍니다
             </p>
         </div>
@@ -385,21 +425,21 @@
         <div class="content-wrapper">
             <h2 class="section-title">PREREQUISITE</h2>
             <div class="grid">
-                <a href="visual 6.html" class="card-link">
+                <a href="visual 6.html" class="card-link health-check-link">
                     <div class="card">
                         <h3 class="card-title">건강 체크</h3>
                         <p class="card-text">모델링 지원 전에 반드시 이 부분을 읽어주시기 바랍니다.</p>
                         <div class="card-link-indicator">→ 시각화 대시보드 보기</div>
                     </div>
                 </a>
-                <a href="visual weitgh.html" class="card-link">
+                <a href="visual weitgh.html" class="card-link anorexia-weight-link">
                     <div class="card">
                         <h3 class="card-title">Anorexia Weight</h3>
                         <p class="card-text">신경성 식욕부진증은 극단적인 식이 제한과 왜곡된 신체 이미지로 인해 심각한 체중 감소를 초래합니다</p>
                         <div class="card-link-indicator">→ 시각화 대시보드 보기</div>
                     </div>
                 </a>
-                <a href="visual BMI.html" class="card-link">
+                <a href="visual BMI.html" class="card-link bmi-link">
                     <div class="card">
                         <h3 class="card-title">BMI</h3>
                         <p class="card-text">BMI는 체중과 키의 비율을 측정하여 저체중이나 과체중 등의 신체 상태를 평가하는 지표입니다</p>
@@ -408,7 +448,7 @@
                 </a>
             </div>
             <div style="text-align: center; margin-top: 60px;">
-                <a href="visual 3.html" class="visual-link">시각화 대시보드 보기</a>
+                <a href="video_view.html" class="visual-link">면접 시각화</a>
             </div>
         </div>
     </section>
@@ -468,7 +508,7 @@
         function setup() {
             let canvas = createCanvas(windowWidth, windowHeight);
             canvas.parent('p5-canvas');
-            
+
             // Create initial particles
             for (let i = 0; i < 20; i++) {
                 particles.push(new Particle(random(width), random(height)));
@@ -477,18 +517,18 @@
 
         function draw() {
             clear();
-            
+
             // Update and display particles
             for (let i = particles.length - 1; i >= 0; i--) {
                 particles[i].update();
                 particles[i].display();
             }
-            
+
             // Update and display explosions
             for (let i = explosions.length - 1; i >= 0; i--) {
                 explosions[i].update();
                 explosions[i].display();
-                
+
                 // Remove finished explosions
                 if (explosions[i].isFinished()) {
                     explosions.splice(i, 1);
@@ -499,7 +539,7 @@
         function mousePressed() {
             // Create explosion effect on click
             explosions.push(new Explosion(mouseX, mouseY));
-            
+
             // Add new permanent particles at click location
             for (let i = 0; i < 8; i++) {
                 particles.push(new Particle(mouseX, mouseY));
@@ -526,29 +566,29 @@
                 // Smooth mouse position tracking
                 smoothMouseX = lerp(smoothMouseX, mouseX, 0.05);
                 smoothMouseY = lerp(smoothMouseY, mouseY, 0.05);
-                
+
                 // Attract to mouse position
                 let dx = smoothMouseX - this.x;
                 let dy = smoothMouseY - this.y;
                 let dist = sqrt(dx * dx + dy * dy);
-                
+
                 if (dist < 150) {
                     let force = (150 - dist) / 150;
                     this.vx += dx * force * 0.0005;
                     this.vy += dy * force * 0.0005;
                 }
-                
+
                 // Add natural drift
                 this.vx *= 0.995;
                 this.vy *= 0.995;
-                
+
                 this.x += this.vx;
                 this.y += this.vy;
-                
+
                 // Add some organic movement
                 this.x += noise(this.x * 0.01, this.y * 0.01, frameCount * 0.01) * 1 - 0.5;
                 this.y += noise(this.y * 0.01, this.x * 0.01, frameCount * 0.01) * 1 - 0.5;
-                
+
                 // Pulsing effect instead of fading
                 this.pulsePhase += 0.05;
                 this.alpha = this.baseAlpha * (0.7 + 0.3 * sin(this.pulsePhase));
@@ -564,7 +604,7 @@
                         line(this.x, this.y, other.x, other.y);
                     }
                 }
-                
+
                 // Draw particle with glow effect
                 noStroke();
                 fill(255, this.alpha * 0.3);
@@ -580,7 +620,7 @@
                 this.y = y;
                 this.particles = [];
                 this.life = 60;
-                
+
                 // Create explosion particles
                 for (let i = 0; i < 15; i++) {
                     let angle = (TWO_PI / 15) * i;
@@ -598,7 +638,7 @@
 
             update() {
                 this.life -= 1.5;
-                
+
                 for (let particle of this.particles) {
                     particle.x += particle.vx;
                     particle.y += particle.vy;
@@ -613,7 +653,7 @@
                     noStroke();
                     fill(255, 200, 100, particle.alpha);
                     ellipse(particle.x, particle.y, particle.size);
-                    
+
                     // Add glow effect
                     fill(255, 255, 200, particle.alpha * 0.4);
                     ellipse(particle.x, particle.y, particle.size * 1.5);
@@ -626,4 +666,5 @@
         }
     </script>
 </body>
+
 </html>
