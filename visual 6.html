@@ -409,7 +409,7 @@
         </div>
 
         <div class="footer">
-            <div class="footer-text">◉ SAMPLE DATA VISUALIZATION ◉ XAI ANALYSIS ◉ 2024</div>
+            <div class="footer-text">◉ SAMPLE DATA VISUALIZATION ◉ XAI ANALYSIS ◉ 2025</div>
             <div class="footer-text" style="margin-top: 10px;">
                 <a href="https://www.kaggle.com/code/jocelyndumlao/analyzing-eating-disorder-survey-data-with-xai#Data-Loading-and-Initial-Inspection"
                     target="_blank"
@@ -752,6 +752,12 @@
                 ctx.strokeStyle = item.color;
                 ctx.lineWidth = 2;
                 ctx.stroke();
+
+                // Add Label
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(item.occupation, x, y - size - 8);
             });
 
             // 축 레이블
